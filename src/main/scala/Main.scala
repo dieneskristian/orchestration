@@ -1,8 +1,6 @@
 import actor.{TestActor1, TestActor2}
 import akka.actor.{ActorSystem, Props}
 
-import com.typesafe.config.ConfigFactory
-
 object Main extends App {
 
   val system = ActorSystem("CustomActorSystem")
