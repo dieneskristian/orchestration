@@ -1,4 +1,4 @@
-import actor.{ClusterListenerActor, TestActor1, TestActor2}
+import demo.{ClusterListenerActor, TestActor1, TestActor2}
 import akka.actor.{ActorSystem, Props}
 
 
@@ -10,5 +10,6 @@ object Main extends App {
   val testActor2 = system.actorOf(Props(new TestActor2(testActor1)), name = "testActor2")
 
   testActor1 ! "name"
+  testActor1 ! "specificMessage"
 
 }

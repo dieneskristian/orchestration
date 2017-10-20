@@ -1,4 +1,4 @@
-package actor
+package demo
 
 import akka.cluster.Cluster
 import akka.cluster.ClusterEvent._
