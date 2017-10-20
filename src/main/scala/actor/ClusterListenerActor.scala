@@ -1,10 +1,11 @@
 package actor
 
-import akka.actor.{Actor, ActorLogging}
 import akka.cluster.Cluster
 import akka.cluster.ClusterEvent._
+import akka.actor.ActorLogging
+import akka.actor.Actor
 
-class ClusterListenerActor extends Actor with ActorLogging{
+class ClusterListenerActor extends Actor with ActorLogging {
 
   val cluster = Cluster(context.system)
 

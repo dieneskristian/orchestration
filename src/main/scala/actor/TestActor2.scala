@@ -1,12 +1,12 @@
 package actor
 
-import akka.actor.{Actor, ActorRef}
+import akka.actor.{ActorRef}
+import core.OrchestratedActor
 
-class TestActor2(testActor1: ActorRef) extends Actor{
+class TestActor2(testActor1: ActorRef) extends OrchestratedActor{
 
-  def receive = {
-    case "welcome" => testActor1 ! "greetings"
-    case _ => println("Cannot parse your message yet")
-  }
+  override val name = "testActor2"
+
+  override
 
 }
