@@ -1,6 +1,7 @@
-import demo.{ClusterListenerActor, TestActor1, TestActor2}
+import demo.TestActor1
 import akka.actor.{ActorSystem, Props}
 import core.Orchestrator
+import core.Orchestrator.{FindByName, Register}
 
 
 object Main extends App {
@@ -12,7 +13,7 @@ object Main extends App {
 
   testActor1 ! "name"
   testActor1 ! "specificMessage"
-  orchestrator ! testActor1
-  orchestrator ! "test"
+  orchestrator ! Register("testActor1",testActor1)
+  orchestrator ! FindByName("testActor1")
 
 }
