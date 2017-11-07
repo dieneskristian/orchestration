@@ -1,7 +1,7 @@
 import demo.{TestActor1, TestActor2}
 import akka.actor.{ActorSystem, Props}
 import core.Orchestrator
-import core.Orchestrator.{FindAll, FindByName, Register, StartService}
+import core.Orchestrator._
 
 
 object Main extends App {
@@ -18,5 +18,6 @@ object Main extends App {
   orchestrator ! Register("testActor2",testActor2)
   orchestrator ! FindAll
   orchestrator ! StartService("testActor1")
-
+  orchestrator ! StartService("testActor2")
+  orchestrator ! StopService("testActor1")
 }

@@ -10,6 +10,8 @@ class Orchestrator extends Actor{
 
   val actors = new HashMap[String,ActorRef]
 
+  implicit def decorateActor(service: ActorRef) = new ActorDecorator(service)
+
   override def receive = {
     case Register(id,service) =>
       actors.getOrElseUpdate(id,service)
@@ -18,11 +20,12 @@ class Orchestrator extends Actor{
     case FindAll =>
       actors.foreach(actor => actor._2 ! "name")
     case StartService(id) =>
-      actors.get(id).get ! "start"
+      actors.get(id).get.startService
     case StopService(id) =>
-      actors.get(id).get ! "stop"
+      actors.get(id).get.stopService
   }
 }
+
 
 //companion object
 object Orchestrator {
@@ -32,20 +35,6 @@ object Orchestrator {
   case class FindAll()
   case class StartService(id: String)
   case class StopService(id: String)
-
-}
-
-//decorator
-
-object ActorDecorator {
-
-  implicit def StartService(): Unit ={
-    println("Service started")
-  }
-
-  implicit def StopService(): Unit ={
-    println("Service started")
-  }
 
 }
 
