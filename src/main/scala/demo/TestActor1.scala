@@ -1,15 +1,18 @@
 package demo
 
-import core.OrchestratedActor
+import akka.actor.Actor
+import core.ActorDecorator.StartService
+import core.ActorDecorator.StopService
 
-class TestActor1 extends OrchestratedActor {
+class TestActor1 extends Actor {
 
-  override val name = "testActor1"
+  val name = "testActor1"
 
-  override def receive = super.receive orElse {
+  override def receive = {
     case "specificMessage" => println("specific")
+    case "start" => StartService()
+    case "stop" => StopService()
   }
-
 
 
 }
