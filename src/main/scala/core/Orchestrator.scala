@@ -2,7 +2,6 @@ package core
 
 import akka.actor.{Actor, ActorRef}
 import core.Orchestrator._
-
 import scala.collection.mutable._
 
 
@@ -16,7 +15,7 @@ class Orchestrator extends Actor{
     case Register(id,service) =>
       actors.getOrElseUpdate(id,service)
     case FindByName(name) =>
-      println(actors.get(name).get ! "name")
+      sender() ! actors.get(name).get
     case FindAll =>
       actors.foreach(actor => actor._2 ! "name")
     case StartService(id) =>
