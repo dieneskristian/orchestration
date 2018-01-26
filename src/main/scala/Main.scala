@@ -1,11 +1,7 @@
 import demo.{TestActor1, TestActor2}
 import akka.actor.{ActorSystem, Props}
-import akka.http.scaladsl.Http
-import akka.routing.Router
-import akka.stream.ActorMaterializer
-import com.typesafe.config.ConfigFactory
 import core.Orchestrator
-import core.Orchestrator.Register
+import core.Orchestrator.{Register, StopService}
 import core.api.WebServer
 
 
@@ -21,6 +17,8 @@ object Main extends App {
   testActor1 ! "specificMessage"
   orchestrator ! Register("testActor1",testActor1)
   orchestrator ! Register("testActor2",testActor2)
+
+  orchestrator ! StopService("testActor1")
 
   val webServer = new WebServer()
 
