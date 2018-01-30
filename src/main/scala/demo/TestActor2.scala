@@ -5,7 +5,7 @@ import akka.actor.Actor
 class TestActor2 extends Actor{
 
   override def receive = {
-    case "specificMessage" => println("specific")
+    case "specificMessage" => sender() ! "specific"
   }
 
 }
