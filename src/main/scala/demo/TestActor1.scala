@@ -1,9 +1,15 @@
 package demo
 
-import akka.actor.{AbstractActor, Actor, ActorLogging}
+import akka.actor.{AbstractActor, Actor, ActorLogging, ActorSystem, Props}
 import akka.cluster.{Cluster, ClusterEvent}
 import akka.cluster.ClusterEvent._
 import akka.event.{Logging, LoggingAdapter}
+import com.typesafe.config.ConfigFactory
+
+import scala.annotation.tailrec
+import scala.concurrent.Future
+import akka.pattern.pipe
+
 
 class TestActor1 extends Actor with ActorLogging{
 
@@ -16,17 +22,14 @@ class TestActor1 extends Actor with ActorLogging{
   }
   override def postStop(): Unit = cluster.unsubscribe(self)
 
-  override def receive = {
+  def receive = {
     case MemberUp(member) =>
       log.info("Member is Up: {}", member.address)
     case UnreachableMember(member) =>
       log.info("Member detected as unreachable: {}", member)
     case MemberRemoved(member, previousStatus) =>
-      log.info(
-        "Member is Removed: {} after {}",
+      log.info("Member is Removed: {} after {}",
         member.address, previousStatus)
     case _: MemberEvent => // ignore
-    case "specificMessage" => sender() ! "specific";
   }
-
 }
