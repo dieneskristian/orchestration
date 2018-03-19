@@ -3,15 +3,19 @@ package core
 import akka.actor.{Actor, ActorLogging, ActorRef, PoisonPill}
 import akka.cluster.Cluster
 import akka.cluster.ClusterEvent._
-
+import akka.persistence.{PersistentActor, SnapshotOffer}
 
 import scala.collection.mutable._
 
 
-class Orchestrator extends Actor with ActorLogging{
+class Orchestrator extends PersistentActor with ActorLogging{
 
   val actors = new HashMap[String,ActorRef]
   val actorsStates =  new HashMap[ActorRef,Boolean]
+
+  override def persistenceId: String = "orchestrator"
+
+  var counter = 0
 
   val cluster = Cluster(context.system)
 
@@ -45,6 +49,20 @@ class Orchestrator extends Actor with ActorLogging{
       actorsStates.update(actors.get(id).get,false)
     case GetState(id) =>
       sender() ! actorsStates.get(actors.get(id).get).get
+  }
+
+  override def receiveRecover: Receive = {
+    // Restore state
+    case SnapshotOffer(_, snapshot: Int) => counter = snapshot
+  }
+
+  override def receiveCommand: Receive = {
+    // Save state
+    case "snap"  => saveSnapshot(counter)
+    // Update state
+    case "incr"  => counter = counter + 1
+    // Print state
+    case "print" => println(counter)
   }
 }
 
