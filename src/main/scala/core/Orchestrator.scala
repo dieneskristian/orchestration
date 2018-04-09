@@ -1,42 +1,66 @@
 package core
 
-import akka.actor.{Actor, ActorLogging, ActorRef, PoisonPill}
+import java.util.function.Consumer
+
+import akka.actor.{Actor, ActorIdentity, ActorLogging, ActorRef, PoisonPill, RootActorPath, Terminated}
 import akka.cluster.Cluster
 import akka.cluster.ClusterEvent._
+import akka.persistence.journal.leveldb.SharedLeveldbJournal
 import akka.persistence.{PersistentActor, SnapshotOffer}
 
+import scala.util.{Failure, Success, Try}
 import scala.collection.mutable._
+import Roles.{TestActor1, TestActor2}
 
 
-class Orchestrator extends PersistentActor with ActorLogging{
+object ProducerActor {
 
+  trait RouterStrategy {
+    def addRoutee(ref: ActorRef): Unit;
+    def removeRoutee(ref: ActorRef): Unit;
+    def sendMessage[M >: Message](msg: M): Unit;
+  }
+}
+
+trait Orchestrator extends Actor with ActorLogging{
+
+  val strategy: ProducerActor.RouterStrategy
   val actors = new HashMap[String,ActorRef]
   val actorsStates =  new HashMap[ActorRef,Boolean]
-
-  override def persistenceId: String = "orchestrator"
-
+  val snapshots = new HashMap[String,ActorRef]
   var counter = 0
 
   val cluster = Cluster(context.system)
 
-  // subscribe to cluster changes, re-subscribe when restart
-  override def preStart(): Unit = {
-    cluster.subscribe(self, initialStateMode = InitialStateAsEvents,
-      classOf[MemberEvent], classOf[UnreachableMember])
-  }
+  override def preStart(): Unit = cluster.subscribe(self, classOf[MemberUp])
   override def postStop(): Unit = cluster.unsubscribe(self)
 
+  def registerConsumer(refTry: Try[ActorRef]): Unit = refTry match {
+    case Success(ref) =>
+      context watch ref
+      strategy.addRoutee(ref)
+    case Failure(_) => log.error("Couldn't find consumer on path!")
+  }
+
   override def receive = {
-    case MemberUp(member) =>
-      log.info("Member is Up: {}", member.address)
-    case UnreachableMember(member) =>
-      log.info("Member detected as unreachable: {}", member)
-    case MemberRemoved(member, previousStatus) =>
-      log.info("Member is Removed: {} after {}",
-        member.address, previousStatus)
+    case MemberUp(member) if (member.roles.contains(TestActor1)) =>
+      log.info(s"""Received member up event for ${member.address}""")
+      val testActorRootPath = RootActorPath(member.address)
+      val testActorSelection1 = context.actorSelection(testActorRootPath / "user" / TestActor1)
+
+      import scala.concurrent.duration.DurationInt
+      import context.dispatcher
+      testActorSelection1.resolveOne(5.seconds).onComplete(registerConsumer)
+    case Terminated(actor) => strategy.removeRoutee(actor)
+    case SimpleMessage =>
+      strategy.sendMessage(s"#$counter")
+      counter += 1
     case Register(id,service) =>
-      actors.getOrElseUpdate(id,service)
-      actorsStates.getOrElseUpdate(service,true)
+      if(!actors.contains(id)) {
+        actors.update(id, service)
+        actorsStates.update(service, true)
+        log.info("Registered actor " + id)
+      }
     case FindByName(name) =>
       sender() ! actors.get(name).get
     case FindAll =>
@@ -51,19 +75,6 @@ class Orchestrator extends PersistentActor with ActorLogging{
       sender() ! actorsStates.get(actors.get(id).get).get
   }
 
-  override def receiveRecover: Receive = {
-    // Restore state
-    case SnapshotOffer(_, snapshot: Int) => counter = snapshot
-  }
-
-  override def receiveCommand: Receive = {
-    // Save state
-    case "snap"  => saveSnapshot(counter)
-    // Update state
-    case "incr"  => counter = counter + 1
-    // Print state
-    case "print" => println(counter)
-  }
 }
 
 

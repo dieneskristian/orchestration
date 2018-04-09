@@ -1,7 +1,7 @@
 package core.api
 
 
-import akka.actor.{ActorRef, Props}
+import akka.actor.{ActorRef, ActorSelection, Props}
 import akka.http.scaladsl.model.{ContentTypes, HttpEntity}
 import akka.http.scaladsl.server.{HttpApp, Route}
 import akka.pattern.Patterns
@@ -13,7 +13,7 @@ import scala.concurrent.{Await, Future}
 
 class WebServer extends HttpApp{
 
-  var orchestrator: ActorRef = null
+  var orchestrator: ActorSelection = null
 
   override def routes(): Route = {
 
@@ -70,7 +70,7 @@ class WebServer extends HttpApp{
 
 
 
-  def setOrchestrator(orchestrator: ActorRef): Unit ={
+  def setOrchestrator(orchestrator: ActorSelection): Unit ={
       this.orchestrator = orchestrator
   }
 

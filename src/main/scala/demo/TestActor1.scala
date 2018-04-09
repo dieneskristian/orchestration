@@ -1,35 +1,10 @@
 package demo
 
 import akka.actor.{AbstractActor, Actor, ActorLogging, ActorSystem, Props}
-import akka.cluster.{Cluster, ClusterEvent}
-import akka.cluster.ClusterEvent._
-import akka.event.{Logging, LoggingAdapter}
-import com.typesafe.config.ConfigFactory
-
-import scala.annotation.tailrec
-import scala.concurrent.Future
-import akka.pattern.pipe
-
+import core.Register
 
 class TestActor1 extends Actor with ActorLogging{
-
-  val cluster = Cluster(context.system)
-
-  // subscribe to cluster changes, re-subscribe when restart
-  override def preStart(): Unit = {
-    cluster.subscribe(self, initialStateMode = InitialStateAsEvents,
-      classOf[MemberEvent], classOf[UnreachableMember])
-  }
-  override def postStop(): Unit = cluster.unsubscribe(self)
-
-  def receive = {
-    case MemberUp(member) =>
-      log.info("Member is Up: {}", member.address)
-    case UnreachableMember(member) =>
-      log.info("Member detected as unreachable: {}", member)
-    case MemberRemoved(member, previousStatus) =>
-      log.info("Member is Removed: {} after {}",
-        member.address, previousStatus)
-    case _: MemberEvent => // ignore
+  override def receive(): Receive = {
+    case msg => context.actorSelection("akka.tcp://AkkaClusterDemo@127.0.0.1:2552/user/orchestrator") ! Register("testActor1",self)
   }
 }
