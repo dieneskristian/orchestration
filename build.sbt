@@ -17,6 +17,7 @@ libraryDependencies ++= Seq(
   "com.typesafe.akka" %% "akka-http-core" % "10.0.10",
   "com.typesafe.akka" %% "akka-http-spray-json" % "10.0.10",
   "com.typesafe.akka" % "akka-cluster-metrics_2.12" % "2.5.6",
+  "ch.megard" %% "akka-http-cors" % "0.3.0",
   "org.scalatest" %% "scalatest" % "3.0.1" % "test",
   "com.typesafe.akka"   %% "akka-persistence" % akkaVersion,
   "org.iq80.leveldb"  % "leveldb"           % "0.7",

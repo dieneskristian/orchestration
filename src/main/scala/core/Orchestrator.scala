@@ -64,7 +64,7 @@ trait Orchestrator extends Actor with ActorLogging{
     case FindByName(name) =>
       sender() ! actors.get(name).get
     case FindAll =>
-      sender() ! actors
+      sender() ! actorsStates
     case StartService(id) =>
       //actors.get(id).get.tell(Start.,this.sender())
       actorsStates.update(actors.get(id).get,true)
