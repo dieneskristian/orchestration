@@ -28,7 +28,8 @@ object Main extends App {
     case TestActor1 =>
       system.actorOf(Props[TestActor1], TestActor1)
     case TestActor2=>
-      system.actorOf(Props[TestActor2], TestActor2)
+      val testActor2 = system.actorOf(Props[TestActor2], TestActor2)
+      system.actorSelection("akka.tcp://AkkaClusterDemo@127.0.0.1:2552/user/orchestrator") ! Register("testActor2",testActor2)
     case WebServer =>
       val webServer = new WebServer()
       webServer.setOrchestrator(system.actorSelection("akka.tcp://AkkaClusterDemo@127.0.0.1:2552/user/orchestrator"))

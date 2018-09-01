@@ -1,18 +1,25 @@
 package core.api
 
 
-import akka.actor.{ActorRef, ActorSelection, Props}
-import akka.http.javadsl.model.headers.HttpOriginRange
-import akka.http.scaladsl.model.{ContentTypes, HttpEntity, HttpResponse, StatusCodes}
-import akka.http.scaladsl.server.{Directive0, HttpApp, Route}
+import akka.actor.{ActorRef, ActorSelection}
+import akka.http.scaladsl.model.{ContentTypes, HttpEntity}
+import akka.http.scaladsl.server.{HttpApp, Route}
 import akka.pattern.Patterns
-import akka.testkit.TestActor
 import core._
 
 import scala.collection.mutable
-import scala.concurrent.duration.Duration
-import scala.concurrent.{Await, Future}
+import scala.concurrent.{Future}
 import ch.megard.akka.http.cors.scaladsl.CorsDirectives._
+
+import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
+import spray.json._
+
+case class MicroService(name: String, state: Boolean)
+
+case object MicroService extends SprayJsonSupport with DefaultJsonProtocol {
+  implicit val MicroServiceFormat = jsonFormat2(MicroService.apply)
+}
+
 
 class WebServer extends HttpApp{
 
@@ -23,12 +30,13 @@ class WebServer extends HttpApp{
 
       path("actor" / Remaining) { pathRest =>
         get {
-          val actorRef = Patterns.ask(orchestrator, FindByName(pathRest), 50000)
-          val responseFuture: Future[ActorRef] = actorRef.mapTo[ActorRef]
-          val result = Await.result(responseFuture, Duration.create(500, "millis"))
-          complete(HttpEntity(ContentTypes.`text/html(UTF-8)`, result.toString()))
-        }
-      } ~
+            val actorRef = Patterns.ask(orchestrator, FindByName(pathRest), 50000)
+            val responseFuture: Future[ActorRef] = actorRef.mapTo[ActorRef]
+            onSuccess(responseFuture) { extraction =>
+              complete(HttpEntity(ContentTypes.`text/html(UTF-8)`, extraction.toString()))
+            }
+          }
+        } ~
         path("start" / Remaining) { pathRest =>
           get {
             Patterns.ask(orchestrator, StartService(pathRest), 50000)
@@ -45,7 +53,7 @@ class WebServer extends HttpApp{
           get {
             val actorRef = Patterns.ask(orchestrator, GetState(pathRest), 50000)
             val responseFuture: Future[Boolean] = actorRef.mapTo[Boolean]
-            val result = Await.result(responseFuture, Duration.create(500, "millis"))
+            val result = onSuccess(responseFuture)
             complete(HttpEntity(ContentTypes.`text/html(UTF-8)`, result.toString))
           }
         } ~
@@ -53,33 +61,17 @@ class WebServer extends HttpApp{
           get {
             val actorRef = Patterns.ask(orchestrator, FindAll, 50000)
             val responseFuture: Future[mutable.HashMap[ActorRef, Boolean]] = actorRef.mapTo[mutable.HashMap[ActorRef, Boolean]]
-            val result = Await.result(responseFuture, Duration.create(500, "millis"))
-            complete(HttpEntity(ContentTypes.`text/html(UTF-8)`, result.toString()))
-          }
-        } ~
-        path("test" / Remaining) { pathRest =>
-          get {
-            val actorRef = Patterns.ask(orchestrator, FindByName(pathRest), 50000)
-            val responseFuture: Future[ActorRef] = actorRef.mapTo[ActorRef]
-            val actor = Await.result(responseFuture, Duration.create(500, "millis"))
-            val stringResult = Patterns.ask(actor, "specificMessage", 50000)
-            val stringFuture: Future[String] = stringResult.mapTo[String]
-            val result = Await.result(stringFuture, Duration.create(500, "millis"))
-            complete(HttpEntity(ContentTypes.`text/html(UTF-8)`, result))
+            onSuccess(responseFuture) { extraction =>
+              complete {
+                List(
+                  MicroService(extraction.keySet.toList(0).toString(),extraction.values.toList(0)),
+                  MicroService(extraction.keySet.toList(1).toString(),extraction.values.toList(1))
+                )
+              }
+            }
           }
         }
-
   }
-
-  /**
-  override def routes(): Route = path("start" / Remaining) { pathRest =>
-    get {
-      orchestrator ! StartService(pathRest)
-      complete(HttpEntity(ContentTypes.`text/html(UTF-8)`,"service started"))
-    }
-  } **/
-
-
 
   def setOrchestrator(orchestrator: ActorSelection): Unit ={
       this.orchestrator = orchestrator
